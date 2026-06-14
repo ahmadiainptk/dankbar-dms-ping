@@ -6,8 +6,9 @@ A **DankMaterialShell** (DMS) bar widget that pings a host on demand and display
 
 ## ✨ Features
 
-- **Click to toggle** — Start/stop ping with a single click
-- **Real-time latency display** — Updates every N seconds (configurable)
+- **Click left** — Open popout window with controls
+- **Click right** — Toggle ping on/off
+- **Real-time latency display** in the Dank Bar — updates every N seconds
 - **Color-coded**:
   - 🟢 Green: < 50ms (excellent)
   - 🔵 Primary: 50-150ms (good)
@@ -15,7 +16,22 @@ A **DankMaterialShell** (DMS) bar widget that pings a host on demand and display
   - 🔴 Error: timeout/fail
 - **Persistent** — Auto-disable after 5 consecutive failures
 - **Configurable** — Host, interval, timeout via right-click → Settings
+- **Popout window** (left click) contains:
+  - Live status with color-coded latency
+  - **Stop button** — instantly stops the ping loop
+  - **Host input** with Apply button — change target host on the fly
+  - **Log of last 15 entries** — timestamp, host, latency, color-coded
+  - **Clear log** button
 - **Local plugin** — No external dependencies, no `git clone` required
+
+## 🎮 Controls
+
+| Action | Result |
+|--------|--------|
+| **Left click** | Open popout (click again to close) |
+| **Right click** | Toggle ping on/off |
+| **Klik kiri** (ID) | Buka popout (klik lagi untuk tutup) |
+| **Klik kanan** (ID) | Toggle ping on/off |
 
 ## 📸 Preview
 
@@ -62,9 +78,11 @@ The installer will:
 
 1. Look at your Dank Bar (right section by default)
 2. Widget shows **"off"** initially
-3. **Click** the widget → it becomes **"33 ms"** (or similar)
+3. **Right-click** the widget → starts ping, becomes **"33 ms"** (or similar)
 4. Wait 5s → updates automatically
-5. **Click again** → stops, back to **"off"**
+5. **Left-click** the widget → opens popout with status, Stop button, host input, and log
+6. In popout, click **Stop** → ping stops, widget shows **"off"** again
+7. In popout, type new host (e.g. `1.1.1.1`) and click **Apply** → ping switches to new host
 
 ## 🗑️ Uninstall
 
@@ -82,11 +100,15 @@ Right-click the Dank Bar → **Settings** → click the widget → adjust:
 ## 🔧 How It Works
 
 1. `PluginComponent` is the base class for DMS plugins
-2. `pillClickAction` callback toggles `enabled` state
-3. `Timer` triggers `runPing()` every N seconds when enabled
-4. `Quickshell.Io.Process` runs `ping -c 1 -W T host | grep -oP '=\s+\K[0-9.]+'` to extract latency
-5. `SplitParser` reads stdout line-by-line, updates `latency` property
-6. `horizontalBarPill` / `verticalBarPill` components render the text with color based on latency
+2. `popoutContent` Component (auto-wired by DMS) creates a popout when defined
+3. `pillRightClickAction` toggles `enabled` state (right-click handler)
+4. Left-click is auto-handled by DMS — opens the popout
+5. `Timer` triggers `runPing()` every N seconds when enabled
+6. `Quickshell.Io.Process` runs `ping -c 1 -W T host | grep -oP '=\s+\K[0-9.]+'` to extract latency
+7. `SplitParser` reads stdout line-by-line, updates `latency` property and `logEntries`
+8. `horizontalBarPill` / `verticalBarPill` components render the text with color based on latency
+9. `onExited` checks exit code: 0 = success, != 0 = mark as "fail" (red) and auto-disable after 5 fails
+10. Popout window (PopoutComponent) shows live status, Stop button (sets `enabled=false`), Host input + Apply (changes `host` property and re-runs ping), and a 15-entry rolling log
 
 The parser extracts the first number after `=` in ping's summary line:
 ```
@@ -133,7 +155,7 @@ PRs welcome! Some ideas:
 - Chart/graph widget showing latency over time
 - Multi-host comparison (ping 3 hosts at once)
 - Traceroute mode
-- TCP port ping instead of ICMP
+- TCP port ping instead of ICMP (no root needed)
 
 ## 📜 License
 

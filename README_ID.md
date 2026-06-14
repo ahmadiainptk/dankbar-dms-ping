@@ -6,8 +6,9 @@ Widget **DankMaterialShell** (DMS) yang ping host sesuai permintaan dan tampilka
 
 ## ✨ Fitur
 
-- **Click to toggle** — Start/stop ping dengan satu click
-- **Real-time latency** — Update setiap N detik (configurable)
+- **Klik kiri** — Buka popout window dengan kontrol
+- **Klik kanan** — Toggle ping on/off
+- **Real-time latency** di Dank Bar — update setiap N detik
 - **Warna otomatis**:
   - 🟢 Hijau: < 50ms (sangat cepat)
   - 🔵 Primary: 50-150ms (baik)
@@ -15,6 +16,12 @@ Widget **DankMaterialShell** (DMS) yang ping host sesuai permintaan dan tampilka
   - 🔴 Error: timeout/gagal
 - **Persistent** — Auto-disable setelah 5× gagal berturut
 - **Configurable** — Host, interval, timeout via klik kanan → Settings
+- **Popout window** (klik kiri) berisi:
+  - Status live dengan latency color-coded
+  - **Tombol Stop** — langsung hentikan loop ping
+  - **Input Host** + Apply — ganti target host on-the-fly
+  - **Log 15 entry terakhir** — timestamp, host, latency, color-coded
+  - **Tombol Clear log**
 - **Plugin lokal** — Gak butuh dependency external, gak perlu `git clone`
 
 ## 📸 Preview
@@ -62,9 +69,11 @@ Installer akan:
 
 1. Lihat Dank Bar lo (section kanan by default)
 2. Widget show **"off"** awalnya
-3. **Click** widget → jadi **"33 ms"** (atau sekitar itu)
+3. **Klik kanan** widget → mulai ping, jadi **"33 ms"** (atau sekitar itu)
 4. Tunggu 5s → update otomatis
-5. **Click lagi** → stop, balik **"off"**
+5. **Klik kiri** widget → buka popout dengan status, tombol Stop, input host, dan log
+6. Di popout, klik **Stop** → ping berhenti, widget balik **"off"**
+7. Di popout, ketik host baru (misal `1.1.1.1`) klik **Apply** → ping pindah ke host baru
 
 ## 🗑️ Uninstall
 
@@ -82,11 +91,15 @@ Klik kanan Dank Bar → **Settings** → click widget → adjust:
 ## 🔧 Cara Kerja
 
 1. `PluginComponent` adalah base class untuk DMS plugin
-2. Callback `pillClickAction` toggle state `enabled`
-3. `Timer` trigger `runPing()` setiap N detik saat enabled
-4. `Quickshell.Io.Process` run `ping -c 1 -W T host | grep -oP '=\s+\K[0-9.]+'` untuk ekstrak latency
-5. `SplitParser` baca stdout line-by-line, update property `latency`
-6. Component `horizontalBarPill` / `verticalBarPill` render text dengan warna sesuai latency
+2. Component `popoutContent` (auto-wired DMS) bikin popout kalau di-define
+3. `pillRightClickAction` toggle state `enabled` (handler klik kanan)
+4. Klik kiri auto-handled DMS — buka popout
+5. `Timer` trigger `runPing()` setiap N detik saat enabled
+6. `Quickshell.Io.Process` run `ping -c 1 -W T host | grep -oP '=\s+\K[0-9.]+'` untuk ekstrak latency
+7. `SplitParser` baca stdout line-by-line, update property `latency` dan `logEntries`
+8. Component `horizontalBarPill` / `verticalBarPill` render text dengan warna sesuai latency
+9. `onExited` cek exit code: 0 = sukses, != 0 = tandai "fail" (merah) + auto-disable setelah 5× gagal
+10. Popout window (PopoutComponent) show live status, tombol Stop (set `enabled=false`), input Host + Apply (ubah property `host` dan re-run ping), dan rolling log 15 entry
 
 Parser ekstrak angka pertama setelah `=` di baris summary ping:
 ```
