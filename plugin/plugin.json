@@ -1,0 +1,13 @@
+{
+    "id": "pingMonitor",
+    "name": "Ping Monitor",
+    "description": "Toggle ping to a host and display latency in the Dank Bar",
+    "version": "1.0.0",
+    "license": "MIT",
+    "author": "ahmadiainptk",
+    "icon": "network_ping",
+    "firstParty": false,
+    "component": "./PingMonitorWidget.qml",
+    "settings": "./PingMonitorSettings.qml",
+    "permissions": []
+}
